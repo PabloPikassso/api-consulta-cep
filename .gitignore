@@ -1,0 +1,6 @@
+.env
+ceps_salvos.csv
+__pycache__/
+*.pyc
+.venv/
+venv/
