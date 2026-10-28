@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Header, HTTPException, status
+from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import requests
 import csv
@@ -9,7 +10,13 @@ load_dotenv()
 app = FastAPI(title="API Consulta CEP")
 
 API_KEY = os.getenv("API_KEY")
-ARQUIVO_CSV = "ceps_salvos.csv"
+# Na Vercel o disco é somente leitura, exceto /tmp
+ARQUIVO_CSV = "/tmp/ceps_salvos.csv" if os.getenv("VERCEL") else "ceps_salvos.csv"
+
+
+@app.get("/", include_in_schema=False)
+def raiz():
+    return RedirectResponse("/docs")
 
 
 @app.get("/cep/{cep}", status_code=status.HTTP_200_OK)
@@ -37,15 +44,18 @@ def buscar_cep(cep: str, x_api_key: str = Header()):
         "estado": dados.get("uf", "")
     }
 
-    arquivo_existe = os.path.exists(ARQUIVO_CSV)
+    try:
+        arquivo_existe = os.path.exists(ARQUIVO_CSV)
 
-    with open(ARQUIVO_CSV, "a", newline="", encoding="utf-8") as arquivo:
-        campos = ["cep", "bairro", "cidade", "estado"]
-        writer = csv.DictWriter(arquivo, fieldnames=campos)
+        with open(ARQUIVO_CSV, "a", newline="", encoding="utf-8") as arquivo:
+            campos = ["cep", "bairro", "cidade", "estado"]
+            writer = csv.DictWriter(arquivo, fieldnames=campos)
 
-        if not arquivo_existe:
-            writer.writeheader()
+            if not arquivo_existe:
+                writer.writeheader()
 
-        writer.writerow(cep_tratado)
+            writer.writerow(cep_tratado)
+    except OSError:
+        pass  # salvar o CSV é opcional; não derruba a consulta
 
     return cep_tratado
