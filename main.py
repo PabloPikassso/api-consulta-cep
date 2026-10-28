@@ -1,15 +1,12 @@
-from fastapi import FastAPI, Header, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import RedirectResponse
-from dotenv import load_dotenv
 import requests
 import csv
 import os
 
-load_dotenv()
 
 app = FastAPI(title="API Consulta CEP")
 
-API_KEY = os.getenv("API_KEY")
 # Na Vercel o disco é somente leitura, exceto /tmp
 ARQUIVO_CSV = "/tmp/ceps_salvos.csv" if os.getenv("VERCEL") else "ceps_salvos.csv"
 
@@ -20,10 +17,7 @@ def raiz():
 
 
 @app.get("/cep/{cep}", status_code=status.HTTP_200_OK)
-def buscar_cep(cep: str, x_api_key: str = Header()):
-    if not API_KEY or x_api_key != API_KEY:
-        raise HTTPException(status_code=403, detail="Chave inválida")
-
+def buscar_cep(cep: str):
     cep = cep.replace("-", "").strip()
     if len(cep) != 8 or not cep.isdigit():
         raise HTTPException(status_code=400, detail="CEP deve ter 8 dígitos")
